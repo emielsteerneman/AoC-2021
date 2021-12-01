@@ -26,22 +26,21 @@ pub fn run() {
     println!("Day 1");
 
     let numbers: Vec<i32> = get_input();
-    let  mut total_increments = 0;
+    let mut total_increments = 0;
 
-    for i in 0..numbers.len()-1 {
-        if numbers[i] < numbers[i+1] {
+    for i in 0..numbers.len() - 1 {
+        if numbers[i] < numbers[i + 1] {
             total_increments += 1;
         }
     }
 
     println!("Answer 1 : {}", total_increments);
 
-
     let numbers: Vec<i32> = get_input();
-    let  mut total_increments = 0;
+    let mut total_increments = 0;
 
-    for i in 0..numbers.len()-3 {
-        if numbers[i] < numbers[i+3] {
+    for i in 0..numbers.len() - 3 {
+        if numbers[i] < numbers[i + 3] {
             total_increments += 1;
         }
     }
