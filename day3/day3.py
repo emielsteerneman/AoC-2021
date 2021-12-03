@@ -1,3 +1,5 @@
+print([numbers:=[int(number,2) for number in open("input1.txt").read().strip().split("\n")],sum([(1<<i)*(len(numbers)/2<sum([0<(n&(1<<i)) for n in numbers])) for i in range(12)])*sum([(1<<i)*(len(numbers)/2<sum([0==(n&(1<<i)) for n in numbers])) for i in range(12)])][1])
+
 numbers_ = open("input1.txt").read().strip().split("\n")
 n_bits = len(numbers_[0])
 numbers_ = [int(number, 2) for number in numbers_]
