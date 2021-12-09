@@ -1,20 +1,22 @@
 import numpy as np
 
 text = open("input.txt").read().strip().split("\n")
+H, W = len(text), len(text[0])
 
 # Fill matrix
-H, W = len(text), len(text[0])
-matrix = np.zeros((H, W), dtype=np.uint8)
-for i_row in range(H): matrix[i_row] = np.array([ int(x) for x in text[i_row] ])
+matrix = np.array([[ int(x) for x in row ] for row in text ])
 # Fill outer matrix, to make kernel work
-outer_matrix = np.ones((H+2, W+2), dtype=np.uint8) * 10
-outer_matrix[1:-1, 1:-1] = matrix
+outer_matrix = np.pad(matrix, pad_width=1, constant_values=9)
+
+
+
+# Part 1 & 2
+local_minima = []
 
 
 
 # Part 1
 kernel = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
-local_minima = []
 
 for (i, j), x in np.ndenumerate(matrix):
 	# Get 3x3 ROI matrix
@@ -25,7 +27,6 @@ for (i, j), x in np.ndenumerate(matrix):
 
 total = sum([ matrix[p] + 1 for p in local_minima ])
 print("Part 1 :", total)
-
 print("Part 1 :", sum([ matrix[(i, j)] + 1 for (i, j), x in np.ndenumerate(matrix) if np.all(x < outer_matrix[i:i+3,j:j+3][np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) > 0]) ]))
 
 
