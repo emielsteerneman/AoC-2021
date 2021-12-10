@@ -22,10 +22,7 @@ for line in lines:
 	else:
 		incomplete_lines.append(line)
 	
-
 print("Part 1 :", sum(error_scores))
-
-
 
 closing_lines = [ [ open_to_close[char] for char in line[::-1] ] for line in incomplete_lines ]
 autocomplete_scores = [ functools.reduce(lambda total, char : total*5 + autocomplete_score[char], line, 0) for line in closing_lines ]
