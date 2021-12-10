@@ -1,5 +1,4 @@
 import functools
-import re
 
 chars_open = "({[<"
 chars_close= ")}]>"
@@ -15,7 +14,7 @@ lines = open("input.txt").read().strip().split("\n")
 incomplete_lines = []
 error_scores = []
 
-for i_line, line in enumerate(lines):
+for line in lines:
 	line_ = line
 	while True:
 		line = line_
