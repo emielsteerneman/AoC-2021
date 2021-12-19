@@ -2,209 +2,95 @@ import numpy as np
 import itertools
 import re
 
-p = lambda a : " | ".join([ str(x[0]).rjust(6) + str(x[1]).rjust(6) + str(x[2]).rjust(6) for x in a])
-
-transformations = list(itertools.product([-1, 1], repeat=3))
-transformations = list(map(np.array, transformations))
-T = transformations
-
-permutations = list(itertools.permutations([0, 1, 2]))
-permutations = list(map(np.array, permutations))
-P = permutations
-
-## Create all rotational matrices
+## Create all rotational matrices. This is such a hack... 
+# Literally generate all possible matrices, and filter for valid rotational ones.
+# It's valid if det(M) == 1 and M.T == M^-1. No idea why, but Google says so.
+# There should be a total of 24 rotational matrices. Again, Google.
 R = list(itertools.product([-1, 0, 1], repeat=9))
 R = [np.array(r).reshape((3, 3)) for r in R]
 R = [ m for m in R if np.linalg.det(m) == 1 ]
 R = [ m for m in R if ( m.T == np.linalg.inv(m) ).all() ]
-print("Number of rotational matrices:", len(R))
-
-def rotate(x):
-	return np.array([ r.dot(x) for r in R ])
-
-inv = np.linalg.inv
 
 def get_input():
-	file = open("input1.txt").read().replace("\n\n", "\n").strip()
-	scanners = re.split(r"---.*---\n", file)[1:]
-	scanners = [ scanner.strip().split("\n") for scanner in scanners]
+	file = open("input.txt").read().replace("\n\n", "\n").strip()
+	scanners_string = re.split(r"---.*---\n", file)[1:]
+	scanners_string = [ scanner.strip().split("\n") for scanner in scanners_string]
 
-	scanners_ = []
+	scanners = []
 
-	for scanner in scanners:
-		scanner_ = np.array([ list(map(int, line.split(","))) for line in scanner ])
-		scanners_.append(scanner_)
+	for scanner_string in scanners_string:
+		scanner = np.array([ list(map(int, line.split(","))) for line in scanner_string ])
+		scanners.append(scanner)
 
-	return np.array(scanners_)
+	return np.array(scanners)
 
-scanners = get_input()
-
-# X = np.array([[-618,-824,-621], [-537,-823,-458], [-447,-329,318]])
-# Y = np.array([[686,422,578],[605,423,415],[515,917,-361]])
-
-# X = scanners[1]
-# Y = scanners[4]
-
-def figure_it_out(X, Y):
+def find_overlap(X, Y):
 	distances = {}
-
+	# Get the distance between all elements of x and all elements of y, while rotating y in all possible configurations
 	for i_x, x in enumerate(X):
 		for i_y, y in enumerate(Y):
 			for i_r, r in enumerate(R):
-				distance = r.dot(x) - y
-				# print(i_x, i_y, i_r, r.dot(x), y, distance)
-				s = str(distance)
-				if s not in distances: distances[s] = [0, r, distance]
-				distances[s][0] += 1
+				distance = x - r.dot(y)		# Rotate y and get distance to x
+				s = str(distance)			# Use string as dict key
+				if s not in distances: 		# Initialize to [0, rotation, distance] if needed
+					distances[s] = [0, r, distance] 
+				distances[s][0] += 1 		# Increase count of distance by 1
 
-	d_list = [ [v, k] for k, v in distances.items() if 12 <= v[0]]
+	# An overlap is only valid if it occurs exactly 12 times
+	overlaps = [ v for k, v in distances.items() if 12 == v[0] ]
 
-	if len(d_list) == 0: 
+	# No overlaps found
+	if len(overlaps) == 0: 
 		return False, None, None
 
-	[count, rotation, distance], string = d_list[0]
-	# print("Offset:", np.linalg.inv(rotation).dot(distance))
+	# Overlap found, return distance and rotational matrix
+	count, rotation, distance = overlaps[0]
 	return True, distance, rotation
 
 
-aligned_with_0 = [True] + [False] * (len(scanners) - 1)
-inv_rot_to_0 = [np.eye(3)] + [None] * (len(scanners) - 1)
-offset_to_0 = [np.zeros(3)] + [None] * (len(scanners) - 1)
 
-for _ in range(1):
+# Get input
+scanners = get_input()
+# List that keeps track of which scanner are aligned with scanner 0
+# scanner 0 is of course aligned with itself
+aligned_with_0 = [True] + [False] * (len(scanners) - 1)
+# List that keeps track of the distances each scanner and scanner 0
+# scanner 0 has of course a distance of [0,0,0] to itself
+distances_to_0 = [np.zeros(3, dtype=int)] + [None] * (len(scanners) - 1)
+
+# While there are still unaligned scanner
+while False in aligned_with_0:
+	# For each scanner combination
 	for i1 in range(len(scanners)):
 		for i2 in range(len(scanners)):			
-			if i1 == i2 : continue
-			if not aligned_with_0[i1]: continue
-			if     aligned_with_0[i2]: continue
-			print(f"\nIndex {i1} & {i2}")
+			if i1 == i2 : continue				# Don't compare scanner with itself
+			if not aligned_with_0[i1]: continue # Don't use an unaligned scanner as reference
+			if     aligned_with_0[i2]: continue # Don't align a scanner that is already aligned
 			
-			overlap, offset, rotation = figure_it_out(scanners[i1], scanners[i2])
-			# if overlap:
-			# 	print("Overlap found!")
-			# continue
+			# Check for overlap between two scanners
+			overlap, offset, rotation = find_overlap(scanners[i1], scanners[i2])
+			# Continue if there is no overlap
+			if not overlap: continue
 
-			if not overlap:
-				print("No overlap")
-				continue
+			# Calculate distance to scanner 0
+			distance_to_0 = (offset + distances_to_0[i1]).astype(int)
 
-			rotated_offset = inv(rotation).dot(offset)
-			to_0 = rotated_offset + offset_to_0[i1]
+			# Realign scanner to 0
+			scanners[i2] = np.array([ rotation.dot(c) for c in scanners[i2] ])
+			aligned_with_0[i2] = True			# Set aligned to True
+			distances_to_0[i2] = distance_to_0 	# Store distance to scanner 0
 
-			print(f"Overlap found. Realigning {i2} ")
-			print(f"Rotated offset: {rotated_offset}")
-			print(f"to_0    offset: {to_0}")
+# Find all locations by adding to each scanner its offset and storing the locations as string
+all_locations = []
+for i_scanner in range(len(scanners)):
+	all_locations += [ str(list(c + distances_to_0[i_scanner])) for c in scanners[i_scanner] ]
+# Filter out duplicate locations and print the length
+print("Part 1:", len(list(set(all_locations))))
 
-			scanners[i2] = np.array([ inv(rotation).dot(c) for c in scanners[i2] ])
-			aligned_with_0[i2] = True
-			inv_rot_to_0[i2] = inv(rotation)
-			offset_to_0[i2] = to_0
-
-			print(aligned_with_0)
-exit()
-
-overlap, d1, r1 = figure_it_out(scanners[0], scanners[1])
-
-if not overlap:
-	exit()
-print(d1)
-print(r1)
-
-
-# scanners1
-print(scanners[0])
-
-changed = scanners[1]
-changed = scanners[1]
-changed = np.array([ inv(r1).dot(s) for s in changed ])
-# changed = scanners[1] - inv(r1).dot(d1)
-
-# changed = inv(r1).dot(scanners[1].T).T
-print(changed)
-# print(scanners[0])
-
-
-exit()
-
-d2, r2, d2_ = figure_it_out(scanners[1], scanners[4])
-
-# -88, 113, 1104
-
-print(r1)
-print(r2)
-print(r1*r2)
-print(np.eye(3)*r1*r2)
-print( (np.eye(3)*r1*r2).dot( d1 ))
-print( (np.eye(3)*r1*r2).dot( d2 ))
-print()
-
-# print( inv(r1).dot(inv(r2).dot(d1)) )
-# print( inv(r2).dot(inv(r1).dot(d1)) )
-
-print( inv(r1).dot(inv(r2).dot(d2)) )
-
-print(inv(r1).dot(inv(r2)))
-print(inv(r1).dot(inv(r2)).dot(d2))
-
-
-
-# print( inv(r2).dot(inv(r1).dot(d2)) )
-
-
-
-exit()
-
-
-for i_x, x in enumerate(X):
-	print("\n\n\n==============")
-	# xt = np.prod([x, T])
-	xt = rotate(x)
-
-	for i_y, y in enumerate(Y):
-		# if i_x != i_y: continue
-
-		# yt = np.prod([y, T])
-		yt = rotate(y)
-		yt = np.array([y])
-
-		print(xt.shape)
-		print("xt ", len(xt), p(xt))
-		print("yt ", p(yt))	
-
-		offsets = []
-		for i_dx, dx in enumerate(xt):
-			for i_dy, dy in enumerate(yt):
-				offsets.append([list(dy-dx), dx])
-		print(len(offsets))
-
-		unique_offsets = np.unique(offsets, axis=0)
-
-		# print(unique_offsets.shape)
-
-		for offset, rot in unique_offsets:
-			offset_str = str(list(offset))
-			# print(offset_str)
-			if offset_str not in coordinates: 
-				coordinates[offset_str] = 0
-				coordinates_rot[offset_str] = rot
-			coordinates[offset_str] += 1
-
-		# print(coordinates)
-
-# for c in coordinates:
-# 	print(coordinates[c], c)
-
-coordinates_list = [ [v, k] for k, v in coordinates.items() if 12 <= v]
-print(coordinates_list)
-
-distance, string = coordinates_list[0]
-print(string, coordinates_rot[string])
-
-exit()
-
-Xt = [ X*t for t in T ]
-p(Xt)
-
-for y in Y:
-	XYd = [ x-y for x in Xt ]
-	p(XYd)
+# Find largest manhattan distance
+manhattan_distance = 0
+for x in distances_to_0:
+	for y in distances_to_0:
+		distance = abs(x[0]-y[0]) + abs(x[1]-y[1]) + abs(x[2]-y[2])
+		manhattan_distance = max(manhattan_distance, distance)
+print("Part 2:", manhattan_distance)
