@@ -62,7 +62,7 @@ def print_cubes(cubes):
 		x1, x2, y1, y2 = cube
 		for x in range(x1, x2+1):
 			for y in range(y1, y2+1):
-				string[y+padding] = string[y+padding][:x+padding] + "123456789ABCDEF"[i_cube] + string[y+padding][x+padding+1:]
+				string[y+padding] = string[y+padding][:x+padding] + "123456789ABCDEFGHIJKLMNOP"[i_cube] + string[y+padding][x+padding+1:]
 	
 	total = sum([ get_size(cube) for cube in cubes ])
 	print()
@@ -71,6 +71,10 @@ def print_cubes(cubes):
 
 def subtract(c1, c2):
 	print("[subtract]", c1, c2)
+
+	print_cubes([c1,c2])
+	if not cubes_intersect(c1, c2): return [c1]
+
 	# x1a => x2a, x2a => x2b, x2b=>x1b
 	xs = [ [c1[0], c2[0]-1], [c2[0], c2[1]], [c2[1]+1, c1[1]] ]
 	ys = [ [c1[2], c2[2]-1], [c2[2], c2[3]], [c2[3]+1, c1[3]] ]
@@ -97,6 +101,7 @@ def subtract(c1, c2):
 			cubes.append([x1_,x2_,y1_,y2_])
 			
 	# cubes.pop(len(cubes)//2)
+	print_cubes(cubes)
 	return [ list(c) for c in cubes ]
 
 def add(c1, c2):
@@ -147,11 +152,11 @@ def add_(c1, c2):
 	return np.array(cubes)
 
 
-# enabled, cubes = get_input("input_small.txt")
-# cubes = cubes[:, :4]*2
+enabled, cubes = get_input("input_small.txt")
+cubes = cubes[:, :4]
 
-cubes = np.array([ [0,5,0,5], [4,8,4,8], [2,6,2,6] ])
-enabled = [True, False, True]
+# cubes = np.array([ [0,5,0,5], [4,8,4,8], [2,6,2,6] ])
+# enabled = [True, False, True]
 cubes_original = np.copy(cubes)
 
 ranges = xmin, xmax, ymin, ymax = get_ranges(cubes)
@@ -162,6 +167,9 @@ cubes[:, 0:2] -= xmin
 cubes[:, 2:4] -= ymin
 
 cubes = [ list(cube) for cube in cubes ]
+
+print(cubes)
+print(enabled)
 
 matrix = np.zeros((width, height), dtype=bool)
 
@@ -178,7 +186,8 @@ cubes = list(cubes)
 print("\n=========")
 
 for i_cube, [is_on, cube] in enumerate(zip(enabled, cubes)):
-	print(f"\n\n\n{i_cube} @ {cube} = {is_on}")
+	print(f"\n\n===========================\n{i_cube} @ {cube} = {is_on}")
+	if len(existing_cubes):print_cubes(existing_cubes)
 	if not is_on:
 		existing_cubes_next = []
 		print(f"Subtracting cube from {len(existing_cubes)}")
@@ -205,8 +214,8 @@ for i_cube, [is_on, cube] in enumerate(zip(enabled, cubes)):
 		print("remaining_cubes", [list(x) for x in remaining_cubes])		
 		existing_cubes += remaining_cubes
 
-	print_cubes(existing_cubes)
 	print()
+print_cubes(existing_cubes)
 print_cubes([cubes_original[0], cubes_original[2]])
 exit()
 
